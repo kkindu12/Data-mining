@@ -234,3 +234,123 @@ data_cleaned = data.copy()
 data_cleaned['fare_capped'] = cap_outliers(data['fare'])
 
 print("✅ Outlier treatment completed!")
+
+# Step 3b: Compare mean and standard deviation before and after cleaning
+print("\n" + "="*50)
+print("STEP 3b: COMPARISON - BEFORE vs AFTER OUTLIER TREATMENT")
+print("="*50)
+
+# Calculate statistics before and after
+before_stats = {
+    'mean': data['fare'].mean(),
+    'std': data['fare'].std(),
+    'min': data['fare'].min(),
+    'max': data['fare'].max(),
+    'median': data['fare'].median()
+}
+
+after_stats = {
+    'mean': data_cleaned['fare_capped'].mean(),
+    'std': data_cleaned['fare_capped'].std(),
+    'min': data_cleaned['fare_capped'].min(),
+    'max': data_cleaned['fare_capped'].max(),
+    'median': data_cleaned['fare_capped'].median()
+}
+
+# Create comparison table
+comparison = pd.DataFrame({
+    'Before_Treatment': before_stats,
+    'After_Treatment': after_stats
+})
+
+print("\n📊 STATISTICAL COMPARISON:")
+print(comparison.round(2))
+
+# Calculate percentage changes
+mean_change = ((after_stats['mean'] - before_stats['mean']) / before_stats['mean']) * 100
+std_change = ((after_stats['std'] - before_stats['std']) / before_stats['std']) * 100
+max_change = ((after_stats['max'] - before_stats['max']) / before_stats['max']) * 100
+
+print(f"\n📈 PERCENTAGE CHANGES:")
+print(f"• Mean: {mean_change:+.1f}%")
+print(f"• Standard Deviation: {std_change:+.1f}%")
+print(f"• Maximum Value: {max_change:+.1f}%")
+
+# Create visualization to show the effect of outlier treatment
+print("\nCreating comparison visualization...")
+
+fig, axes = plt.subplots(1, 2, figsize=(15, 6))
+
+# Before treatment
+axes[0].boxplot(data['fare'])
+axes[0].set_title('Fare Distribution - BEFORE Outlier Treatment', fontweight='bold')
+axes[0].set_ylabel('Fare ($)')
+axes[0].grid(True, alpha=0.3)
+
+# Add statistics annotation
+axes[0].text(0.7, 0.95, f"Mean: ${before_stats['mean']:.2f}\nStd: ${before_stats['std']:.2f}", 
+             transform=axes[0].transAxes, bbox=dict(boxstyle="round,pad=0.3", facecolor="lightblue"))
+
+# After treatment
+axes[1].boxplot(data_cleaned['fare_capped'])
+axes[1].set_title('Fare Distribution - AFTER Outlier Capping', fontweight='bold')
+axes[1].set_ylabel('Fare ($)')
+axes[1].grid(True, alpha=0.3)
+
+# Add statistics annotation
+axes[1].text(0.7, 0.95, f"Mean: ${after_stats['mean']:.2f}\nStd: ${after_stats['std']:.2f}", 
+             transform=axes[1].transAxes, bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgreen"))
+
+plt.tight_layout()
+plt.savefig('outlier_treatment_comparison.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+print("✅ Comparison visualization saved as 'outlier_treatment_comparison.png'")
+
+# Step 3c: Conclude how outlier handling affected the data distribution
+print("\n" + "="*50)
+print("STEP 3c: CONCLUSION - EFFECT OF OUTLIER HANDLING")
+print("="*50)
+
+conclusion = f"""
+Outlier handling through capping significantly improved the data distribution. 
+The standard deviation decreased by {abs(std_change):.1f}%, indicating reduced variability, 
+while the mean shifted {abs(mean_change):.1f}% closer to the median. 
+The treatment created a more balanced distribution suitable for further analysis.
+"""
+
+print("🎯 CONCLUSION:")
+print(conclusion)
+
+print("\n" + "="*60)
+print("🎉 PART B - DETECTING OUTLIERS - COMPLETED SUCCESSFULLY!")
+print("="*60)
+
+# Import libraries
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy import stats
+import warnings
+warnings.filterwarnings('ignore')
+
+print("DATA MINING ASSIGNMENT - MISSING VALUES & OUTLIERS")
+print("=" * 60)
+
+# Load dataset
+titanic = sns.load_dataset('titanic')
+print("Dataset loaded: Titanic dataset")
+print(f"Shape: {titanic.shape}")
+
+# I.a. Missing values analysis
+missing_count = titanic.isnull().sum()
+missing_percent = (titanic.isnull().sum() / len(titanic)) * 100
+
+missing_info = pd.DataFrame({
+    'Missing_Count': missing_count,
+    'Missing_Percent': missing_percent
+}).sort_values('Missing_Percent', ascending=False)
+
+print("\nI.a. MISSING VALUES ANALYSIS:")
+print(missing_info[missing_info['Missing_Count'] > 0])
