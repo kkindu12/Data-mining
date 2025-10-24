@@ -125,4 +125,112 @@ print(summary_df.to_string(index=False))
 
 print("\n🔍 KEY FINDINGS:")
 for result in summary_data:
-    print(f"• {result['Column'].upper()}: {result['IQR_Outliers']} outliers (IQR), {result['Zscore_Outliers']} outliers (Z-score)")    
+    print(f"• {result['Column'].upper()}: {result['IQR_Outliers']} outliers (IQR), {result['Zscore_Outliers']} outliers (Z-score)")  
+
+#Vizualization of outliers
+# Step 2a: Draw boxplot to visually highlight outliers
+print("\n" + "="*50)
+print("STEP 2a: VISUALIZING OUTLIERS WITH BOXPLOT")
+print("="*50)
+
+plt.figure(figsize=(12, 6))
+
+# Create boxplot for fare column (chosen for visualization)
+plt.subplot(1, 2, 1)
+boxplot = plt.boxplot(data['fare'], patch_artist=True)
+plt.title('Boxplot of Fare Column', fontsize=14, fontweight='bold')
+plt.ylabel('Fare ($)')
+
+# Customize boxplot colors
+boxplot['boxes'][0].set_facecolor('lightblue')
+boxplot['medians'][0].set_color('red')
+boxplot['fliers'][0].set_marker('o')
+boxplot['fliers'][0].set_markerfacecolor('red')
+boxplot['fliers'][0].set_markeredgecolor('red')
+boxplot['fliers'][0].set_alpha(0.6)
+
+# Add value annotations
+fare_stats = data['fare'].describe()
+plt.text(1.2, fare_stats['75%'], f"Q3: {fare_stats['75%']:.1f}", va='center')
+plt.text(1.2, fare_stats['25%'], f"Q1: {fare_stats['25%']:.1f}", va='center')
+plt.text(1.2, fare_stats['50%'], f"Median: {fare_stats['50%']:.1f}", va='center')
+
+plt.grid(True, alpha=0.3)
+
+# Step 2a: Create scatter plot to highlight outliers
+print("Creating scatter plot visualization...")
+
+plt.subplot(1, 2, 2)
+
+# Detect outliers in fare column for highlighting
+fare_outliers, lower_bound, upper_bound = detect_outliers_iqr(data['fare'])
+
+# Create a mask for outliers
+is_outlier = data['fare'] > upper_bound  # Only upper outliers for fare
+
+# Plot normal points
+plt.scatter(data[~is_outlier]['age'], data[~is_outlier]['fare'], 
+           alpha=0.6, color='blue', s=50, label='Normal Data')
+
+# Plot outliers with different style
+plt.scatter(data[is_outlier]['age'], data[is_outlier]['fare'], 
+           alpha=0.8, color='red', s=80, marker='X', label='Outliers', 
+           edgecolors='darkred', linewidth=1)
+
+plt.xlabel('Age (years)')
+plt.ylabel('Fare ($)')
+plt.title('Age vs Fare - Outliers Highlighted', fontsize=14, fontweight='bold')
+plt.legend()
+plt.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.savefig('outlier_visualization.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+print("✅ Visualization saved as 'outlier_visualization.png'")
+ 
+# Step 2b: Write a short observation
+print("\n" + "="*50)
+print("STEP 2b: VISUALIZATION OBSERVATION")
+print("="*50)
+
+fare_outliers_count = summary_data[1]['IQR_Outliers']  # Fare is second column
+
+observation = f"""{fare_outliers_count} extreme points were identified as outliers in the Fare column. 
+These represent passengers who paid exceptionally high ticket prices compared to the majority, 
+with some fares exceeding ${upper_bound:.0f} while most passengers paid less than ${data['fare'].quantile(0.75):.0f}."""
+
+print("📝 OBSERVATION:")
+print(observation)
+
+# Step 3a: Apply outlier treatment using capping/winsorizing
+print("\n" + "="*50)
+print("STEP 3a: HANDLING OUTLIERS - CAPPING METHOD")
+print("="*50)
+
+def cap_outliers(column):
+    """
+    Cap outliers using IQR method (Winsorizing)
+    Values below lower bound are set to lower bound
+    Values above upper bound are set to upper bound
+    """
+    Q1 = column.quantile(0.25)
+    Q3 = column.quantile(0.75)
+    IQR = Q3 - Q1
+    
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    
+    print(f"  • Original range: [{column.min():.2f}, {column.max():.2f}]")
+    print(f"  • Capping bounds: [{lower_bound:.2f}, {upper_bound:.2f}]")
+    
+    # Cap the values
+    capped_column = column.clip(lower=lower_bound, upper=upper_bound)
+    
+    return capped_column
+
+print("Applying capping to Fare column...")
+data_cleaned = data.copy()
+data_cleaned['fare_capped'] = cap_outliers(data['fare'])
+
+print("✅ Outlier treatment completed!")
